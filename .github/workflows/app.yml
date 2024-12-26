@@ -1,0 +1,29 @@
+name: "dev deployment"
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - development
+
+jobs:
+  Dev_deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Execute Commands on Server
+        run: |
+          sshpass -p ${{ secrets.DEV_STAG_REP_PASSWORD }} ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.DEV_STAG_REP_USERNAME }}@${{ secrets.DEV_STAG_REP_IP }} << EOF
+          cd applications/cgzjrxcdyd/public_html
+          git reset --hard
+          git clean -fd
+          git checkout development
+          git pull origin development --rebase=false
+          php artisan migrate
+          npm install 
+          npm run build 
+          EOF
